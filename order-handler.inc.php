@@ -112,13 +112,25 @@
 		$encoding = get_option('star-cloudprnt-printer-encoding-select');
 
 		$phpenc = "UTF-8";
-		if($encoding === "1252")
+		if ($encoding === "1252") {
 			$phpenc = "cp1252";
+		}
+
+		// Normaliser les données en chaîne pour éviter les erreurs de type
+		if (is_array($data)) {
+			// Par exemple, méta WooCommerce contenant plusieurs valeurs
+			$data = implode(', ', array_map('strval', $data));
+		} elseif (!is_string($data)) {
+			// Gérer les autres types (int, float, objets castables, null, ...)
+			$data = (string) $data;
+		}
 
 		$data = html_entity_decode($data, ENT_QUOTES, "UTF-8");
 
-		if($phpenc !== "UFT-8")
+		// Correction de la typo : s'assurer que l'on ne reconvertit pas UTF-8 vers UTF-8
+		if ($phpenc !== "UTF-8") {
 			$data = mb_convert_encoding($data, $phpenc, "UTF-8");
+		}
 
 		$data = str_replace(array("\r", "\n"), '', $data);				// Strip newlines
 
@@ -130,10 +142,12 @@
 	{
 
 		$extension = STAR_CLOUDPRNT_SPOOL_FILE_FORMAT;	
-		
+		 
 		$selectedPrinterMac = "";
 		$selectedPrinter = array();
 		$printerList = star_cloudprnt_get_printer_list();
+
+        error_log("printerList: " . print_r($printerList, true));
 		if (!empty($printerList))
 		{
 		
@@ -233,6 +247,7 @@
 					};
 
 					jQuery.post(ajaxurl, data, function(response) {
+						//alert('Got this from the server: ' + response);
 						jQuery("#star_cp_job_sent").show();
 						setTimeout(() => {
 							jQuery("#star_cp_job_sent").hide();
@@ -251,6 +266,7 @@
 	// Handle the ajax reprint action
 	function star_cloudprnt_reprint_button_callback()
 	{
+        error_log("Impression");
 		star_cloudprnt_trigger_print($_POST["order_id"]);
 		wp_die();
 	}
