@@ -7,13 +7,20 @@
 	 * Author: lawrenceowen, athompson1, gcubero, fmahmood
 	 * Author URI: http://www.star-emea.com/support
 	 * Requires at least: 5.0
-	 * Tested up to: 5.7
+	 * Tested up to: 6.4
 	 * WC requires at least: 4.0
-	 * WC tested up to: 5.1
+	 * WC tested up to: 8.4
 	 */
 	 
 	// Block direct access to this script
 	if (!defined( 'ABSPATH' )) exit;
+
+	// Declare compatibility with WooCommerce HPOS (High-Performance Order Storage)
+	add_action( 'before_woocommerce_init', function() {
+		if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+		}
+	} );
 	
 	// Include printer files
 	if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') include_once(plugin_dir_path(__FILE__).'cloudprnt\\printer.inc.php');
