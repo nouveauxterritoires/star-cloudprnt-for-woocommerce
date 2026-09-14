@@ -78,14 +78,66 @@
   
   // Retrieve order notes text
   function star_cloudprnt_get_wc_order_notes($order_id){
-		//make sure it's a number
 		$order_id = intval($order_id);
-		//get the post 
-		$post = get_post($order_id);
-		//if there's no post, return as error
-		if (!$post) return false;
+		$order = wc_get_order($order_id);
+		if (!$order) return false;
 
-		return $post->post_excerpt;
+		// WC_Order::get_customer_note() is HPOS-compatible and replaces get_post()->post_excerpt
+		return $order->get_customer_note();
+	}
+
+  /**
+   * Retrieve all meta data for an order in a format compatible with both legacy
+   * (post-meta) and HPOS storage.
+   *
+   * Returns an associative array identical in shape to get_post_meta($order_id):
+   *   [ 'meta_key' => [ 0 => 'value' ], ... ]
+   */
+  function star_cloudprnt_get_order_meta($order_id) {
+		$order = wc_get_order(intval($order_id));
+		if (!$order) return array();
+
+		// Use WC_Order::get_meta_data() – works in both legacy and HPOS modes.
+		$meta_array = array();
+		foreach ($order->get_meta_data() as $meta) {
+			$data = $meta->get_data();
+			if (!array_key_exists($data['key'], $meta_array)) {
+				$meta_array[$data['key']] = array();
+			}
+			$meta_array[$data['key']][] = $data['value'];
+		}
+
+		// Core order fields are not stored as meta in HPOS; add them explicitly
+		// so that downstream code that reads e.g. _order_total keeps working.
+		$core_fields = array(
+			'_order_total'           => $order->get_total(),
+			'_cart_discount'         => $order->get_discount_total(),
+			'_payment_method_title'  => $order->get_payment_method_title(),
+			'_shipping_first_name'   => $order->get_shipping_first_name(),
+			'_shipping_last_name'    => $order->get_shipping_last_name(),
+			'_shipping_address_1'    => $order->get_shipping_address_1(),
+			'_shipping_address_2'    => $order->get_shipping_address_2(),
+			'_shipping_city'         => $order->get_shipping_city(),
+			'_shipping_state'        => $order->get_shipping_state(),
+			'_shipping_postcode'     => $order->get_shipping_postcode(),
+			'_billing_first_name'    => $order->get_billing_first_name(),
+			'_billing_last_name'     => $order->get_billing_last_name(),
+			'_billing_address_1'     => $order->get_billing_address_1(),
+			'_billing_address_2'     => $order->get_billing_address_2(),
+			'_billing_city'          => $order->get_billing_city(),
+			'_billing_state'         => $order->get_billing_state(),
+			'_billing_postcode'      => $order->get_billing_postcode(),
+			'_billing_phone'         => $order->get_billing_phone(),
+		);
+
+		foreach ($core_fields as $key => $value) {
+			// Only set if not already present in custom meta (avoid overwriting)
+			if (!array_key_exists($key, $meta_array)) {
+				$meta_array[$key] = array($value);
+			}
+		}
+
+		return $meta_array;
 	}
 
   // Return the site currency symbol, converted to the printers target encoding
