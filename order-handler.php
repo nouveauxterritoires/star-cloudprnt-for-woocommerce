@@ -360,12 +360,10 @@
 	{
 
 		$order = wc_get_order($order_id);
-		$order_number = $order->get_order_number();			// Displayed order number may be different to order_id when using some plugins
-		$shipping_items = @array_shift($order->get_items('shipping'));
-		$order_meta = get_post_meta($order_id);
-		
-		$meta_data = $order->get_meta_data();
-		
+			$order_number = $order->get_order_number();			// Displayed order number may be different to order_id when using some plugins
+			$shipping_items = @array_shift($order->get_items('shipping'));
+			$order_meta = star_cloudprnt_get_order_meta($order_id);
+	
 		// Get the correct object for building commands for the selected printer
 		$printer = star_cloudprnt_command_generator($selectedPrinter, $file);
 		
